@@ -1,7 +1,7 @@
 section .multiboot_header
 header_start:
 	; magicnumber
-	dd 0xe85250d6
+	dd 0xe85250d6 ;multiboot 2
 	; architecture
 	dd 0 ;protected mode i386
 	; header length
