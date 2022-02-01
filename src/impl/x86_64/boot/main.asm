@@ -13,12 +13,14 @@ start:
 	call setup_page_tables
 	call enable_paging
 
+	; Boot into 64bit(long) mode
 	lgdt [gdt64.pointer]
 	jmp gdt64.code_segment:long_mode_start
 
 	hlt
 
 check_multiboot:
+	; If multiboot, this value will be in the eax register on boot.
 	cmp eax, 0x36d76289
 	jne .no_multiboot
 	ret
@@ -45,17 +47,17 @@ check_cpuid:
 	jmp error
 
 check_long_mode:
-	mov eax, 0x80000000
-	cpuid
-	cmp eax, 0x80000001
-	jb .no_long_mode
+	mov eax, 0x80000000    ; Set the A-register to 0x80000000.
+    cpuid                  ; CPU identification.
+    cmp eax, 0x80000001    ; Compare the A-register with 0x80000001.
+    jb .no_long_mode       ; It is less, there is no long mode.
 
-	mov eax, 0x80000001
-	cpuid
-	test edx, 1 << 29
-	jz .no_long_mode
-	
-	ret
+    mov eax, 0x80000001    ; Set the A-register to 0x80000001.
+    cpuid                  ; CPU identification.
+    test edx, 1 << 29      ; Test if the LM-bit, which is bit 29, is set in the D-register.
+    jz .no_long_mode       ; They aren't, there is no long mode.
+
+    ret
 .no_long_mode:
 	mov al, "L"
 	jmp error

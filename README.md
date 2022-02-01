@@ -1,7 +1,8 @@
 # DaymOS
 Daymian's Operating System built with x86 asm
 
-![DaymOS Screenshot](https://raw.githubusercontent.com/dmtomczyk/daymos/master/pics/DaymOS-0.1.0.png)
+![DaymOS GRUB Screenshot](/pics/GRUBMenu.png)
+![DaymOS Screenshot](/pics/DaymOS-0.1.0.png)
 
 ## Write Your Own 64-bit Operating System Kernel From Scratch
 ### Prerequisites
