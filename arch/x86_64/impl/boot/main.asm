@@ -1,5 +1,6 @@
 global start
 extern long_mode_start
+extern idt_flush
 
 section .text ; Processor Instructions (TODO read-only)
 bits 32
@@ -12,6 +13,9 @@ start:
 
 	call setup_page_tables
 	call enable_paging
+
+	; Setup IDT
+	
 
 	; Boot into 64bit(long) mode
 	lgdt [gdt64.pointer]
