@@ -1,7 +1,7 @@
 global long_mode_start
 extern kernel_main
 
-section .text
+section .text ; Processor Instructions (TODO read-only)
 bits 64
 long_mode_start:
     ; load null into all data segment registers

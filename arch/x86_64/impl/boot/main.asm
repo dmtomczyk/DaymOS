@@ -1,7 +1,7 @@
 global start
 extern long_mode_start
 
-section .text
+section .text ; Processor Instructions (TODO read-only)
 bits 32
 start:
 	mov esp, stack_top
@@ -116,7 +116,7 @@ error:
 	mov byte  [0xb800a], al
 	hlt
 
-section .bss
+section .bss ; Un-initialized TODO read-write
 align 4096
 page_table_l4:
 	resb 4096
@@ -128,7 +128,7 @@ stack_bottom:
 	resb 4096 * 4
 stack_top:
 
-section .rodata
+section .rodata ; TODO Read-only data section
 gdt64:
 	dq 0 ; zero entry
 .code_segment: equ $ - gdt64
