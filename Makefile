@@ -1,22 +1,37 @@
 x86_64_c_source_files := $(shell find arch/x86_64/impl -name *.c)
 x86_64_c_object_files := $(patsubst arch/x86_64/impl/%.c, build/x86_64/%.o, $(x86_64_c_source_files))
 
-x86_64_asm_source_files := $(shell find arch/x86_64/impl -name *.asm)
+x86_64_asm_source_files := $(shell find arch/x86_64/impl -name '*.asm')
 x86_64_asm_object_files := $(patsubst arch/x86_64/impl/%.asm, build/x86_64/%.o, $(x86_64_asm_source_files))
 
 x86_64_object_files := $(x86_64_c_object_files) $(x86_64_asm_object_files)
 
 $(x86_64_c_object_files): build/x86_64/%.o : arch/x86_64/impl/%.c
 	mkdir -p $(dir $@) && \
-	x86_64-elf-gcc -c -I arch/x86_64/intf -ffreestanding $(patsubst build/x86_64/%.o, arch/x86_64/impl/%.c, $@) -o $@
+	x86_64-elf-gcc -c -I arch/x86_64/intf -ffreestanding -g -O0 $(patsubst build/x86_64/%.o, arch/x86_64/impl/%.c, $@) -o $@
 
 $(x86_64_asm_object_files): build/x86_64/%.o : arch/x86_64/impl/%.asm
 	mkdir -p $(dir $@) && \
 	nasm -f elf64 $(patsubst build/x86_64/%.o, arch/x86_64/impl/%.asm, $@) -o $@
 
+.PHONY: dbg-build-x86_64
+dbg-build-x86_64: $(x86_64_object_files)
+	mkdir -p dist/x86_64 && \
+	x86_64-elf-ld -n -o dist/x86_64/kernel.elf -T targets/x86_64/linker.ld $(x86_64_object_files) && \
+	x86_64-elf-objcopy -O binary dist/x86_64/kernel.elf dist/x86_64/kernel.bin && \
+	cp dist/x86_64/kernel.elf targets/x86_64/iso/boot/kernel.elf && \
+	cp dist/x86_64/kernel.bin targets/x86_64/iso/boot/kernel.bin && \
+	grub-mkrescue /usr/lib/grub/i386-pc -o dist/x86_64/kernel.iso targets/x86_64/iso
+
 .PHONY: build-x86_64
 build-x86_64: $(x86_64_object_files)
 	mkdir -p dist/x86_64 && \
-	x86_64-elf-ld -n -o dist/x86_64/kernel.bin -T targets/x86_64/linker.ld $(x86_64_object_files) && \
+	x86_64-elf-ld -n -o dist/x86_64/kernel.elf -T targets/x86_64/linker.ld $(x86_64_object_files) && \
+	x86_64-elf-objcopy -O binary dist/x86_64/kernel.elf dist/x86_64/kernel.bin && \
+	cp dist/x86_64/kernel.elf targets/x86_64/iso/boot/kernel.elf && \
 	cp dist/x86_64/kernel.bin targets/x86_64/iso/boot/kernel.bin && \
 	grub-mkrescue /usr/lib/grub/i386-pc -o dist/x86_64/kernel.iso targets/x86_64/iso
+
+.PHONY: clean
+clean:
+	rm -rf build/x86_64 dist/x86_64 targets/x86_64/iso/boot/kernel.{elf,bin} targets/x86_64/iso/boot/grub/stage2_eltorito

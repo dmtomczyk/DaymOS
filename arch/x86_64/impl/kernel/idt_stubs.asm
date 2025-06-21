@@ -1,10 +1,13 @@
 ; IDT helpers for x86_64
 BITS 64
 
+EXTERN isr_handler
+EXTERN irq_handler
+
 global idt_flush
 idt_flush:
     lidt [rdi]
-    sti
+    ; sti moving to idt.c for now
     ret
 
 %macro ISR_NOERRCODE 1
@@ -87,7 +90,6 @@ IRQ 13, 45
 IRQ 14, 46
 IRQ 15, 47
 
-extern isr_handler
 isr_common_stub:
     push r15
     push r14
@@ -124,7 +126,6 @@ isr_common_stub:
     add rsp, 16
     iretq
 
-extern irq_handler
 irq_common_stub:
     push r15
     push r14

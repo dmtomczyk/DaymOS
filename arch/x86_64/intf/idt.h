@@ -23,9 +23,12 @@ struct idt_ptr_struct{
 } __attribute__((packed));
 
 void initIdt();
+void initIdtDebug();
 void setIdtGate(uint8_t num, uint64_t base, uint16_t sel, uint8_t flags);
 
 void isr_handler(struct InterruptRegisters* regs);
+__attribute__((target("no-sse")))
+void irq_handler(struct InterruptRegisters* regs);
 void irq_install_handler (int irq, void (*handler)(struct InterruptRegisters *r));
 
 extern void isr0();

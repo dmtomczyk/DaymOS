@@ -1,4 +1,5 @@
 global start
+global stack_top
 extern long_mode_start
 extern idt_flush
 

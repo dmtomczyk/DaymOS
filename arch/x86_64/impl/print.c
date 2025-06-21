@@ -78,6 +78,18 @@ void print_str(char* str) {
     }
 }
 
+static const char* hex_digits = "0123456789ABCDEF";
+
+void print_hex(const char* label, uint64_t value) {
+    print_str(label);
+    print_str("0x");
+    for (int i = 60; i >= 0; i -= 4) {
+        uint8_t nibble = (value >> i) & 0xF;
+        print_char(hex_digits[nibble]);
+    }
+    print_str("\n");
+}
+
 void print_set_color(uint8_t foreground, uint8_t background) {
     color = foreground + (background << 4);
 }
