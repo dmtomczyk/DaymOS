@@ -1,28 +1,29 @@
 #include "stdint.h"
 
 struct InterruptRegisters{
-    uint32_t cr2;
-    uint32_t ds;
-    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
-    uint32_t int_no, err_code;
-    uint32_t eip, csm, eflags, useresp, ss;
+    uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
+    uint64_t rsi, rdi, rbp, rbx, rdx, rcx, rax;
+    uint64_t int_no, err_code;
+    uint64_t rip, cs, rflags, rsp, ss;
 };
 
 struct idt_entry_struct{
     uint16_t base_low;
     uint16_t sel;
-    uint8_t always0;
-    uint8_t flags;
-    uint16_t base_high;
-}__attribute__((packed));
+    uint8_t  ist;
+    uint8_t  flags;
+    uint16_t base_mid;
+    uint32_t base_high;
+    uint32_t zero;
+} __attribute__((packed));
 
 struct idt_ptr_struct{
     uint16_t limit;
-    uint32_t base;
-}__attribute__((packed));
+    uint64_t base;
+} __attribute__((packed));
 
 void initIdt();
-void setIdtGate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags);
+void setIdtGate(uint8_t num, uint64_t base, uint16_t sel, uint8_t flags);
 
 void isr_handler(struct InterruptRegisters* regs);
 void irq_install_handler (int irq, void (*handler)(struct InterruptRegisters *r));
