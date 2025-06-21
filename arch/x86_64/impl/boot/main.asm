@@ -134,9 +134,11 @@ stack_top:
 
 section .rodata ; TODO Read-only data section
 gdt64:
-	dq 0 ; zero entry
+        dq 0                     ; null descriptor
 .code_segment: equ $ - gdt64
-	dq (1 << 43) | (1 << 44) | (1 << 47) | (1 << 53) ; code segment
+        dq 0x00AF9A000000FFFF    ; 64-bit code segment
+.data_segment: equ $ - gdt64
+        dq 0x00AF92000000FFFF    ; 64-bit data segment
 .pointer:
-	dw $ - gdt64 - 1 ; length
-	dq gdt64 ; address
+        dw $ - gdt64 - 1 ; length
+        dq gdt64 ; address

@@ -4,8 +4,8 @@ extern kernel_main
 section .text ; Processor Instructions (TODO read-only)
 bits 64
 long_mode_start:
-    ; load null into all data segment registers
-    mov ax, 0
+    ; load data segment selector into data registers
+    mov ax, 0x10
     mov ss, ax
     mov ds, ax
     mov es, ax
