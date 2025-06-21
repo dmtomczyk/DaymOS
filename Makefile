@@ -8,7 +8,7 @@ x86_64_object_files := $(x86_64_c_object_files) $(x86_64_asm_object_files)
 
 $(x86_64_c_object_files): build/x86_64/%.o : arch/x86_64/impl/%.c
 	mkdir -p $(dir $@) && \
-	x86_64-elf-gcc -c -I arch/x86_64/intf -ffreestanding -g -O0 $(patsubst build/x86_64/%.o, arch/x86_64/impl/%.c, $@) -o $@
+	x86_64-elf-gcc -c -I arch/x86_64/intf -ffreestanding -mno-red-zone -g -O0 $(patsubst build/x86_64/%.o, arch/x86_64/impl/%.c, $@) -o $@
 
 $(x86_64_asm_object_files): build/x86_64/%.o : arch/x86_64/impl/%.asm
 	mkdir -p $(dir $@) && \

@@ -1,11 +1,12 @@
 #include "stdint.h"
 
-struct InterruptRegisters{
+struct InterruptRegisters {
     uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
     uint64_t rsi, rdi, rbp, rbx, rdx, rcx, rax;
     uint64_t int_no, err_code;
-    uint64_t rip, cs, rflags, rsp, ss;
+    uint64_t rip, cs, rflags;
 };
+// uint64_t rip, cs, rflags, rsp, ss;
 
 struct idt_entry_struct{
     uint16_t base_low;
@@ -27,7 +28,6 @@ void initIdtDebug();
 void setIdtGate(uint8_t num, uint64_t base, uint16_t sel, uint8_t flags);
 
 void isr_handler(struct InterruptRegisters* regs);
-__attribute__((target("no-sse")))
 void irq_handler(struct InterruptRegisters* regs);
 void irq_install_handler (int irq, void (*handler)(struct InterruptRegisters *r));
 

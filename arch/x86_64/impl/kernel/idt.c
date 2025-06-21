@@ -214,7 +214,8 @@ void setIdtGate(uint8_t num, uint64_t base, uint16_t sel, uint8_t flags){
     idt_entries[num].base_low  = base & 0xFFFF;
     idt_entries[num].sel       = sel;
     idt_entries[num].ist       = 0;
-    idt_entries[num].flags     = flags | 0x60;
+    idt_entries[num].flags     = flags;
+    // idt_entries[num].flags     = flags | 0x60;
     idt_entries[num].base_mid  = (base >> 16) & 0xFFFF;
     idt_entries[num].base_high = (base >> 32) & 0xFFFFFFFF;
     idt_entries[num].zero      = 0;
@@ -271,37 +272,59 @@ void *irq_routines[16] = {
 };
 
 void irq_install_handler (int irq, void (*handler)(struct InterruptRegisters *r)){
+    dbg("INSTALLING IRQ HANDLER");
     irq_routines[irq] = handler;
+    print_hex("Installing IRQ handler at ", (uint64_t)handler);
+    print_hex("Stored in irq_routines[0]: ", (uint64_t)irq_routines[0]);
 }
 
 void irq_uninstall_handler(int irq){
     irq_routines[irq] = 0;
 }
 
-
-// Here's a minimal safe irq_handler for testing:
 void irq_handler(struct InterruptRegisters* regs) {
-    // Just acknowledge the interrupt and return
-    if (regs->int_no >= 40) {
-        outPortB(0xA0, 0x20); // EOI to slave PIC
+    dbg("irq_handler...");
+    if (((uint64_t)regs & 0xF) != 0) {
+        // Will crash or infinite loop cleanly if stack is misaligned
+        while (1) { __asm__("cli; hlt"); }
     }
-    outPortB(0x20, 0x20);     // EOI to master PIC
+
+    // Optional: manually verify expected int_no
+    if (regs->int_no != 32) {
+        while (1) { __asm__("cli; hlt"); }
+    }
+
+    // outPortB(0x20, 0x20);  // Send EOI
+
+    // print_str("IN IRQ HANDLER\n");
+    // print_hex("int_no: ", regs->int_no);
+    // print_hex("err_cd: ", regs->err_code);
+    
+    // // Print what iretq will return to
+    // uint64_t* stack = (uint64_t*)regs;
+    // print_hex("RIP:    ", stack[17]);
+    // print_hex("CS:     ", stack[18]);
+    // print_hex("RFLAGS: ", stack[19]);
+
+    // // Optional: print int number
+    // print_hex("int_no: ", stack[15]);
+    // print_hex("err_cd: ", stack[16]);
+
+    // while (1);  // <== HALT SYSTEM BEFORE IRETQ
+
+    // int irq_num = regs->int_no - 32;
+
+    // // Defensive check: only handle valid IRQs 0-15
+    // if (irq_num >= 0 && irq_num < 16) {
+    //     void (*handler)(struct InterruptRegisters *regs) = (void (*)(struct InterruptRegisters *)) irq_routines[irq_num];
+    //     if (handler) {
+    //         handler(regs);
+    //     }
+    // }
+
+    // // Send End-of-Interrupt (EOI) to PICs
+    // if (regs->int_no >= 40) {
+    //     outPortB(0xA0, 0x20); // EOI to slave PIC
+    // }
+    // outPortB(0x20, 0x20);     // EOI to master PIC
 }
-
-// void irq_handler(struct InterruptRegisters* regs) {
-//     int irq_num = regs->int_no - 32;
-
-//     // Defensive check: only handle valid IRQs 0-15
-//     if (irq_num >= 0 && irq_num < 16) {
-//         void (*handler)(struct InterruptRegisters *regs) = (void (*)(struct InterruptRegisters *)) irq_routines[irq_num];
-//         if (handler) {
-//             handler(regs);
-//         }
-//     }
-
-//     // Send End-of-Interrupt (EOI) to PICs
-//     if (regs->int_no >= 40) {
-//         outPortB(0xA0, 0x20); // EOI to slave PIC
-//     }
-//     outPortB(0x20, 0x20);     // EOI to master PIC
-// }

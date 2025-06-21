@@ -1,9 +1,6 @@
 ; IDT helpers for x86_64
 BITS 64
 
-EXTERN isr_handler
-EXTERN irq_handler
-
 global idt_flush
 idt_flush:
     lidt [rdi]
@@ -31,10 +28,10 @@ isr%1:
     global irq%1
 irq%1:
     cli
-    push qword 0
-    push qword %2
+    mov rdi, %2     ; pass int_no in rdi (the actual interrupt number)
     jmp irq_common_stub
 %endmacro
+
 
 ; Exceptions
 ISR_NOERRCODE 0
@@ -90,6 +87,7 @@ IRQ 13, 45
 IRQ 14, 46
 IRQ 15, 47
 
+extern isr_handler
 isr_common_stub:
     push r15
     push r14
@@ -106,8 +104,10 @@ isr_common_stub:
     push rdx
     push rcx
     push rax
+
     mov rdi, rsp
     call isr_handler
+
     pop rax
     pop rcx
     pop rdx
@@ -123,10 +123,13 @@ isr_common_stub:
     pop r13
     pop r14
     pop r15
+
     add rsp, 16
     iretq
 
+extern irq_handler
 irq_common_stub:
+    ; push general purpose registers
     push r15
     push r14
     push r13
@@ -136,14 +139,23 @@ irq_common_stub:
     push r9
     push r8
     push rsi
-    push rdi
+    push rdi    ; save rdi (will be overwritten)
     push rbp
     push rbx
     push rdx
     push rcx
     push rax
-    mov rdi, rsp
+
+    ; now push dummy err_code and into_no from saved rdi
+    push qword 0            ; err_code
+    mov rax, [rsp + 15*8]   ; rdi was saved 10 pushes ago (8 before this one)
+    push rax                ; int_no
+
+    mov rdi, rsp            ; arg to irq_handler
     call irq_handler
+
+    ; pop everything back
+    add rsp, 16             ; remove int_no and err_code
     pop rax
     pop rcx
     pop rdx
@@ -159,5 +171,9 @@ irq_common_stub:
     pop r13
     pop r14
     pop r15
-    add rsp, 16
+
+    cli
+    hlt
+
     iretq
+

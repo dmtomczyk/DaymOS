@@ -12,53 +12,26 @@ void sleep_loop(uint32_t loops) {
 
 void kernel_main()
 {
+    // 1. Kernel Greeting
     print_clear();
     print_set_color(PRINT_COLOR_YELLOW, PRINT_COLOR_BLACK);
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-
+    print_str("Welcome to DaymOS (Daymian's Operating System)!!!\n");
     sleep_loop(5000000);  // Tune this based on CPU speed
 
-    
-    print_str("Init IDT");
-    print_str("Init IDT");
-    print_str("Init IDT");
-    initIdtDebug();
-    // initIdt();
-    print_str("Post IDT");
-    print_str("Post IDT");
-    print_str("Post IDT");
-
-    sleep_loop(5000000);  // Tune this based on CPU speed
-
-
+    // 2. Initialize IDT
     print_set_color(PRINT_COLOR_GREEN, PRINT_COLOR_BLACK);
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-
-    sleep_loop(5000000);  // Tune this based on CPU speed
-
+    print_str("kernel-main - PRE initIdt()\n");
+    initIdtDebug();
+    print_str("kernel-main - POST initIdt()!!!\n");
+    
+    // 3. Initialize / Start PIT Timer
+    print_str("kernel-main - PRE initTimer()\n");
+    sleep_loop(5000000);
     initTimer();
-    // kb_init();
 
     print_set_color(PRINT_COLOR_BLUE, PRINT_COLOR_BLACK);
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
-    print_str("Welcome to DaymOS (Daymian's Operating System)");
+    print_str("kernel-main - MISSION SUCCESS!!\n");
+    sleep_loop(5000000);
 
     while(1);
 }
