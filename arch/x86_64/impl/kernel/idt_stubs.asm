@@ -32,6 +32,15 @@ irq%1:
     jmp irq_common_stub
 %endmacro
 
+extern irq_handler_stub
+global irq0
+irq0:
+    cli
+    push 0              ; dummy error code
+    push 32             ; IRQ0 vector number
+    call irq_handler_stub
+    add rsp, 16         ; clean up the 2 pushes
+    iretq
 
 ; Exceptions
 ISR_NOERRCODE 0
@@ -70,7 +79,7 @@ ISR_NOERRCODE 128
 ISR_NOERRCODE 177
 
 ; IRQs
-IRQ 0, 32
+; IRQ 0, 32
 IRQ 1, 33
 IRQ 2, 34
 IRQ 3, 35
@@ -176,4 +185,3 @@ irq_common_stub:
     hlt
 
     iretq
-

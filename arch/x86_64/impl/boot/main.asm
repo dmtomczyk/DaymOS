@@ -1,11 +1,15 @@
 global start
-global stack_top
+extern stack_top
 extern long_mode_start
 extern idt_flush
 
 section .text ; Processor Instructions (TODO read-only)
 bits 32
 start:
+	; GDB loop to connect
+	cli
+	jmp $
+
 	mov esp, stack_top
 
 	call check_multiboot
@@ -129,9 +133,6 @@ page_table_l3:
 	resb 4096
 page_table_l2:
 	resb 4096
-stack_bottom:
-	resb 4096 * 4
-stack_top:
 
 section .rodata ; TODO Read-only data section
 gdt64:

@@ -26,9 +26,9 @@ void initTimer() {
         : "rax", "memory"
     );
 
-    for (uint64_t addr = 0; addr < 0x400000; addr += 0x1000) {
-        map_page(addr, addr); // identity map 4MiB
-    }
+    // for (uint64_t addr = 0; addr < 0x400000; addr += 0x1000) {
+    //     map_page(addr, addr); // identity map 4MiB
+    // }
     
     print_set_color(PRINT_COLOR_MAGENTA, PRINT_COLOR_BLACK);
     print_str("Initializing Timer!\n");
@@ -50,7 +50,7 @@ void initTimer() {
 
     ticks = 0;
     print_str("Installing IRQ0 Handler!\n");
-    irq_install_handler(0, &onIRQ0);
+    // irq_install_handler(0, &onIRQ0);
 
     // Oscillator 1.1931816666 MHz
     uint32_t divisor = 1193180 / freq;
@@ -68,6 +68,13 @@ void initTimer() {
     mask &= ~0x01; // Clear bit 0 to unmask
     print_hex("Original PIC mask: ", mask);
     print_str("BAR!\n");
-    outPortB(0x21, mask); // write updated mask
+    // TODO: outPortB(0x21, mask); // write updated mask
     print_str("BAZ!\n");
+
+    uint64_t rsp_val;
+    asm volatile("mov %%rsp, %0" : "=r"(rsp_val));
+    print_hex("Current RSP before sti: ", rsp_val);
+
+    __asm__("sti"); // Enable interrupts here instead of inside idt_flush?
 }
+

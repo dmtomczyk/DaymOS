@@ -29,4 +29,13 @@ SECTIONS
         *(.bss COMMON)
         _end = .;
     }
+
+    /* --- Kernel Stack Section --- */
+    . += 0x1000; /* Padding in case _end is misaligned */
+    .stack ALIGN(16K) : ALIGN(16K)
+    {
+        PROVIDE(stack_bottom = .);
+        . = . + 16K;            /* 16KB kernel stack */
+        PROVIDE(stack_top = .);
+    }
 }

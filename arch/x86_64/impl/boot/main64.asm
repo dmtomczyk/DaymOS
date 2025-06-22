@@ -22,7 +22,7 @@ long_mode_start:
 
 next:
     ; Set up the stack
-    mov rsp, stack_top
+    mov rsp, 0x800000
     and rsp, -16          ; Align stack before calling C handler (optional but safer)
 
     ; Call the kernel main function

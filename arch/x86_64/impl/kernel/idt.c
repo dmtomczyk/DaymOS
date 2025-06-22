@@ -29,6 +29,11 @@ void halt_forever() {
 
 extern void idt_flush(uint64_t);
 
+void irq_handler_stub(void) {
+    // Minimal side-effect-free test
+    print_str("[IRQ0 fired]\n");
+}
+
 // Example usage in initIdtDebug()
 void initIdtDebug() {
     dbg("IDT start");
@@ -122,8 +127,14 @@ void initIdtDebug() {
     print_hex("IDT[32] base_high: ", idt_entries[32].base_high);
     
     idt_flush((uint64_t)&idt_ptr);
-    __asm__("sti"); // Enable interrupts here instead of inside idt_flush?
     
+    
+    uint64_t base = ((uint64_t)idt_entries[32].base_low) |
+                ((uint64_t)idt_entries[32].base_mid << 16) |
+                ((uint64_t)idt_entries[32].base_high << 32);
+                print_hex("Vector 32 addr: ", base);
+
+
     dbg("Flushed IDT and halting");
 }
 
