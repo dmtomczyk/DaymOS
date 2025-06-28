@@ -26,7 +26,6 @@ void halt_forever() {
 #define dbg(msg) do { print_str(msg); print_str("\n"); debug_pause(); } while (0)
 #define dbg_halt(msg) do { print_str(msg); print_str("\n"); halt_forever(); } while (0)
 
-
 extern void idt_flush(uint64_t);
 
 void irq_handler_stub(void) {
@@ -40,10 +39,8 @@ void initIdtDebug() {
 
     idt_ptr.limit = sizeof(struct idt_entry_struct) * 256 - 1;
     idt_ptr.base = (uint64_t)&idt_entries;
-    dbg("Set IDT pointer");
 
-    memset(&idt_entries, 0, sizeof(idt_entries));
-    dbg("Cleared IDT");
+    memset(&idt_entries, 0, sizeof(struct idt_entry_struct) * 256);
 
     // Remap the PICs
     outPortB(0x20, 0x11); // Start init of master PIC
@@ -112,30 +109,21 @@ void initIdtDebug() {
     setIdtGate(128, (uint64_t)isr128, 0x08, 0x8E); //System calls
     setIdtGate(177, (uint64_t)isr177, 0x08, 0x8E); //System calls
 
-    print_hex("IDT base: ", idt_ptr.base);
-    print_hex("IDT limit: ", idt_ptr.limit);
-    print_str("\n");
-
-    print_hex("IDT[0] base_low: ", idt_entries[0].base_low);
-    print_hex("IDT[0] sel: ", idt_entries[0].sel);
-    print_hex("IDT[0] flags: ", idt_entries[0].flags);
-    print_hex("IDT[0] base_high: ", idt_entries[0].base_high);
-    
-    print_hex("IDT[32] base_low: ", idt_entries[32].base_low);
-    print_hex("IDT[32] sel: ", idt_entries[32].sel);
-    print_hex("IDT[32] flags: ", idt_entries[32].flags);
-    print_hex("IDT[32] base_high: ", idt_entries[32].base_high);
-    
     idt_flush((uint64_t)&idt_ptr);
     
-    
+    // uint8_t* raw = (uint8_t*)&idt_entries[32];
+    // for (int i = 0; i < 16; ++i) {
+    //     print_hex("IDT[32] byte", raw[i]);
+    // }
+
     uint64_t base = ((uint64_t)idt_entries[32].base_low) |
                 ((uint64_t)idt_entries[32].base_mid << 16) |
                 ((uint64_t)idt_entries[32].base_high << 32);
                 print_hex("Vector 32 addr: ", base);
 
-
-    dbg("Flushed IDT and halting");
+    // print_hex("irq0 addr (from C): ", (uint64_t)&irq0);
+    uint64_t* gdt64 = (uint64_t*) 0x1045c8; // base from Bochs dump
+    print_hex("GDT[1] (0x08): ", gdt64[1]);
 }
 
 
@@ -222,6 +210,15 @@ void initIdt(){
 
 void setIdtGate(uint8_t num, uint64_t base, uint16_t sel, uint8_t flags){
 
+    if (num == 32) {
+        print_hex("Setting IDT[%d]:\n", num);
+        print_hex("  base_low  = 0x%04x\n", idt_entries[num].base_low);
+        print_hex("  sel       = 0x%04x\n", idt_entries[num].sel);
+        print_hex("  ist       = 0x%02x\n", idt_entries[num].ist);
+        print_hex("  flags     = 0x%02x\n", idt_entries[num].flags);
+        print_hex("  base_mid  = 0x%04x\n", idt_entries[num].base_mid);
+        print_hex("  base_high = 0x%08x\n", idt_entries[num].base_high);
+    }
     idt_entries[num].base_low  = base & 0xFFFF;
     idt_entries[num].sel       = sel;
     idt_entries[num].ist       = 0;
@@ -230,7 +227,6 @@ void setIdtGate(uint8_t num, uint64_t base, uint16_t sel, uint8_t flags){
     idt_entries[num].base_mid  = (base >> 16) & 0xFFFF;
     idt_entries[num].base_high = (base >> 32) & 0xFFFFFFFF;
     idt_entries[num].zero      = 0;
-
 }
 
 char* exception_messages[] = {

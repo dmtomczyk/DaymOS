@@ -3,6 +3,8 @@ BITS 64
 
 global idt_flush
 idt_flush:
+    ; TODO: temp debug
+    ;hlt
     lidt [rdi]
     ; sti moving to idt.c for now
     ret
@@ -31,16 +33,6 @@ irq%1:
     mov rdi, %2     ; pass int_no in rdi (the actual interrupt number)
     jmp irq_common_stub
 %endmacro
-
-extern irq_handler_stub
-global irq0
-irq0:
-    cli
-    push 0              ; dummy error code
-    push 32             ; IRQ0 vector number
-    call irq_handler_stub
-    add rsp, 16         ; clean up the 2 pushes
-    iretq
 
 ; Exceptions
 ISR_NOERRCODE 0
@@ -79,7 +71,7 @@ ISR_NOERRCODE 128
 ISR_NOERRCODE 177
 
 ; IRQs
-; IRQ 0, 32
+IRQ 0, 32
 IRQ 1, 33
 IRQ 2, 34
 IRQ 3, 35
@@ -136,8 +128,13 @@ isr_common_stub:
     add rsp, 16
     iretq
 
+extern irq_handler_stub
 extern irq_handler
 irq_common_stub:
+    ; TODO: Temp debug
+    ;hlt
+    ;jmp $
+
     ; push general purpose registers
     push r15
     push r14
@@ -157,11 +154,13 @@ irq_common_stub:
 
     ; now push dummy err_code and into_no from saved rdi
     push qword 0            ; err_code
-    mov rax, [rsp + 15*8]   ; rdi was saved 10 pushes ago (8 before this one)
+    %define RDI_OFFSET 16*8
+    mov rax, [rsp + RDI_OFFSET]
     push rax                ; int_no
 
     mov rdi, rsp            ; arg to irq_handler
-    call irq_handler
+    call irq_handler_stub
+    ;call irq_handler
 
     ; pop everything back
     add rsp, 16             ; remove int_no and err_code
@@ -180,8 +179,4 @@ irq_common_stub:
     pop r13
     pop r14
     pop r15
-
-    cli
-    hlt
-
     iretq

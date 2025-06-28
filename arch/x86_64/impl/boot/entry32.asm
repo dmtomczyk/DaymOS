@@ -3,39 +3,65 @@ extern stack_top
 extern long_mode_start
 extern idt_flush
 
-section .text ; Processor Instructions (TODO read-only)
+section .text
 bits 32
+
 start:
-	; GDB loop to connect
-	cli
-	jmp $
+    ; you're now in protected mode (CS=0x08, DS=0x10)
+	xchg bx, bx  ; This is Bochs's magic breakpoint
 
+	; setup stack
 	mov esp, stack_top
+	mov ebp, esp
 
-	call check_multiboot
-	call check_cpuid
+	mov al, 'F'
+	out 0xE9, al
+
+	lidt [dummy_idt_descriptor]
+
+	; Common setup regardless of boot path
 	call check_long_mode
 
-	call setup_page_tables
-	call enable_paging
-
-	; Setup IDT
-	
-
-	; Boot into 64bit(long) mode
-	lgdt [gdt64.pointer]
-	jmp gdt64.code_segment:long_mode_start
+	; Detect boot path
+	cmp eax, 0x36d76289		; mb2 magic
+	je .from_grub
+	jmp .from_mbr
 
 	hlt
 
-check_multiboot:
-	; If multiboot, this value will be in the eax register on boot.
-	cmp eax, 0x36d76289
-	jne .no_multiboot
-	ret
-.no_multiboot:
-	mov al, "M"
-	jmp error
+.enter_long_mode:
+	; TODO: Temp debug
+	mov eax, [gdt64.pointer + 2]   ; base of GDT
+	mov [0xb8010], eax
+	mov dword [0xb8014], 0x4F544447 ; " GDT"
+
+	lgdt [gdt64.pointer]
+	jmp gdt64.code_segment:long_mode_start
+
+.from_grub:
+	;lidt [dummy_idt_descriptor]
+	call setup_page_tables
+	call enable_paging
+	call .enter_long_mode
+
+.from_mbr:
+	; Setup Dummy IDT to handle any QEMU Timing issues, etc. before our 64 bit IDT is setup
+	;lidt [dummy_idt_descriptor]
+
+	;call check_cpuid ; bochs may not support, need to debug later
+
+	call setup_page_tables
+	call enable_paging
+	call .enter_long_mode
+
+dummy_idt:
+    times 256 dq 0
+
+dummy_idt_descriptor:
+    dw dummy_idt_end - dummy_idt - 1
+    dd dummy_idt
+
+dummy_idt_end:
 
 check_cpuid:
 	pushfd
@@ -89,7 +115,9 @@ setup_page_tables:
 	mov [page_table_l2 + ecx * 8], eax
 
 	inc ecx ; increment counter
-	cmp ecx, 512 ; checks if the whole table is mapped
+	cmp ecx, 8 ; 8 * 2 MiB = 16 MiB
+	; TODO: Reducing actual size due to PIT IRQ0 alignment issue
+	; cmp ecx, 512 ; checks if the whole table is mapped
 	jne .loop ; if not, continue
 
 	ret

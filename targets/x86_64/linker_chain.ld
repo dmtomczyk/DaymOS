@@ -1,27 +1,32 @@
 ENTRY(start)
 
-SECTIONS {
-  . = 0x100000;
+SECTIONS 
+{
+    . = 1M;
 
-  .text : {
+  .text ALIGN(4K) : AT(ADDR(.text)) {
     *(.text*)
   }
 
-  .rodata : {
+  .rodata ALIGN(4K) : AT(ADDR(.rodata)) {
     *(.rodata*)
   }
 
-  .data : {
+  .data ALIGN(4K) : AT(ADDR(.data)) {
     *(.data*)
   }
 
-  .bss : {
-    *(.bss COMMON*)
+  .bss ALIGN(4K) : AT(ADDR(.bss)) {
+    *(COMMON)
+    *(.bss*)
+    _end = .;
   }
 
-  . += 0x4000; /* reserve 16KB stack space */
-
-  stack_bottom = .;
-  . += 0x4000;
-  stack_top = .;
+  /* Kernel stack */
+  . += 0x1000; /* Optional padding */
+  .stack (NOLOAD) : ALIGN(16K) {
+    PROVIDE(stack_bottom = .);
+    . = . + 16K;
+    PROVIDE(stack_top = .);
+  }
 }
