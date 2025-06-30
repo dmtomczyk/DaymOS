@@ -7,25 +7,31 @@ section .text
 bits 32
 
 start:
-    ; you're now in protected mode (CS=0x08, DS=0x10)
-	xchg bx, bx  ; This is Bochs's magic breakpoint
+	; 0. Greet Visitor :)
+	mov al, 'P'
+	out 0xE9, al
 
-	; setup stack
+	; TODO: 1. Move kernel to 1MB (0x100000)
+	;mov esi, 0x80000
+	;mov edi, 0x100000
+	;mov ecx, KERNEL_SIZE / 4
+	;rep movsd
+	;jmp 0x100000
+
 	mov esp, stack_top
 	mov ebp, esp
 
-	mov al, 'F'
-	out 0xE9, al
-
+	; 1. Determine if they came from MB2
+	;cmp eax, 0x36d76289		; mb2 magic
+	;je .from_grub
+	;jmp .from_mbr
+	 
+	; 2. Setup remaining items (LM check, Dummy IDT, Paging, etc.)
 	lidt [dummy_idt_descriptor]
-
-	; Common setup regardless of boot path
+	call setup_page_tables
+	call enable_paging
 	call check_long_mode
-
-	; Detect boot path
-	cmp eax, 0x36d76289		; mb2 magic
-	je .from_grub
-	jmp .from_mbr
+	call .enter_long_mode
 
 	hlt
 
@@ -33,26 +39,20 @@ start:
 	; TODO: Temp debug
 	mov eax, [gdt64.pointer + 2]   ; base of GDT
 	mov [0xb8010], eax
-	mov dword [0xb8014], 0x4F544447 ; " GDT"
+	mov dword [0xb8014], 0x4F544447 ; "GDT"
 
 	lgdt [gdt64.pointer]
 	jmp gdt64.code_segment:long_mode_start
 
 .from_grub:
-	;lidt [dummy_idt_descriptor]
 	call setup_page_tables
 	call enable_paging
-	call .enter_long_mode
+	ret
 
 .from_mbr:
-	; Setup Dummy IDT to handle any QEMU Timing issues, etc. before our 64 bit IDT is setup
-	;lidt [dummy_idt_descriptor]
-
-	;call check_cpuid ; bochs may not support, need to debug later
-
 	call setup_page_tables
 	call enable_paging
-	call .enter_long_mode
+	ret
 
 dummy_idt:
     times 256 dq 0

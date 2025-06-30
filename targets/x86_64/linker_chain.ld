@@ -2,7 +2,7 @@ ENTRY(start)
 
 SECTIONS 
 {
-    . = 1M;
+    . = 0x80000;
 
   .text ALIGN(4K) : AT(ADDR(.text)) {
     *(.text*)

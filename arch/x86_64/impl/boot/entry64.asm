@@ -5,9 +5,9 @@ extern stack_top
 section .text ; Processor Instructions (TODO read-only)
 bits 64
 long_mode_start:
-    cli
-    hlt
-    jmp $         ; <== TODO: allows GDB to attach before the crash
+    ;cli
+    ;hlt
+    ;jmp $         ; <== TODO: allows GDB to attach before the crash
 
     ; Load data segment selector into data registers
     mov ax, 0x10          ; Data segment selector (from GDT)

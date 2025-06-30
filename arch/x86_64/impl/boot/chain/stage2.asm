@@ -20,8 +20,13 @@ stage2_start:
     test cx, 1
     jz  .no_extensions    ; bit 0 clear → extensions not supported
 
+    ; 1.5 Enable A20
+    in al, 0x92
+    or al, 0x02
+    out 0x92, al
+
     ; 2. Read kernel into memory
-    call read_kernel_lba
+    call read_kernel_chs
 
     mov ah, 0x0e
     mov al, 'C'
@@ -51,65 +56,35 @@ stage2_start:
 .no_extensions:
     hlt
     jmp $
-
-; Input: DL = BIOS boot drive number (e.g., 0x80)
-;        ES:BX = pointer to disk_address_packet (DAP)
-;        LBA 2048 = kernel sector start
-;        Read 33 sectors = ~16KB kernel
-
-read_kernel_lba:
-    mov ah, 0x0e
-    mov al, 'B'
-    int 0x10
-    
+read_kernel_chs:
     pusha
 
-    ; Setup Disk Address Packet (DAP) in memory
-    ; Must be aligned and below 1MB (e.g., 0x8000 or lower)
-    mov si, disk_address_packet
-
-    ; DAP format:
-    ; offset | size | desc
-    ; -------+------+-------------------------
-    ;   0    | 1    | size of DAP (10h)
-    ;   1    | 1    | reserved (0)
-    ;   2    | 2    | sector count to read
-    ;   4    | 2    | destination offset
-    ;   6    | 2    | destination segment
-    ;   8    | 8    | LBA (QWORD)
-
-    ; DAP[0] = 0x10
-    mov byte [si], 0x10
-    mov byte [si+1], 0x00          ; reserved
-    mov word [si+2], 33            ; # of sectors (~16 KB)
-    mov word [si+4], 0x0000        ; offset = 0x0000
-    mov word [si+6], 0x1000        ; segment = 0x1000 → 0x10000:0 = 0x100000
-    mov dword [si+8], 2048         ; LBA low (start sector)
-    mov dword [si+12], 0           ; LBA high (zero for < 2TB)
-
-    ; Point ES:BX to DAP
-    mov bx, si
-    mov ax, 0
+    ; Set ES:BX to 0x8000:0000, which maps to 0x80000 physical
+    mov ax, 0x8000  ; segment
     mov es, ax
+    xor bx, bx      ; offset
 
-    ; Set up registers
-    mov ah, 0x42
+    ; CHS for LBA 2048 = Cylinder 2, Head 0, Sector 33
+    mov ah, 0x02        ; BIOS: Read Sectors
+    mov al, 33          ; Sector count (~16 KiB kernel)
+    mov ch, 1           ; Cylinder
+    mov cl, 2           ; Sector (bits 0–5 = 33)
+    mov dh, 0           ; Head
+    mov dl, 0x80        ; boot drive
+
     int 0x13
-    jc .read_error
+    jc .read_failed
 
     popa
     ret
 
-.read_error:
-    ; You can add diagnostic code here or loop forever
+.read_failed:
+    mov al, 'F'
+    out 0xE9, al
     cli
     hlt
     jmp $
 
-; ------------------------------------------------
-; Data Section (place near top of stage2.asm)
-disk_address_packet:
-    times 16 db 0     ; must be 16 bytes total
 
 ; ========== GDT Setup ==========
 section .gdt align=8
@@ -155,9 +130,9 @@ protected_start:
     mov al, 'W'
     out 0xE9, al
 
-    xchg bx, bx     ; Will break into debugger
+    xchg bx, bx     ; TODO: Will break into debugger
 
-    jmp 0x08:0x00100000     ; entry32.asm starts here
+    jmp 0x08:0x80000     ; entry32.asm temporarily exists here
     
     ; control transfer failed?
     mov al, 'Z'

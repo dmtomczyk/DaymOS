@@ -81,25 +81,6 @@ _start:
     mov al, '4'
     int 0x10
 
-    ; Check if INT 13h Extensions supported
-    ;mov ax, 0x4100
-    ;mov bx, 0x55AA
-    ;int 0x13
-    ;jc disk_error
-    ;cmp bx, 0xAA55
-    ;jne disk_error
-
-    ; TODO: Debug / Test LBA instead of CHS
-    ;mov si, disk_packet
-    ;mov ah, 0x42      ; INT 13h Extensions - Extended Read
-    ;mov dl, 0x80      ; first HDD
-    ;int 0x13
-    ;jc disk_error
-
-    mov ah, 0x0e
-    mov al, '5'
-    int 0x10
-
     jmp 0x0800:0000
 
 ; Disk Address Packet for LBA read
