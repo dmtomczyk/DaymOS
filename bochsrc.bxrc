@@ -1,0 +1,27 @@
+# RAM
+megs: 64
+
+# HDD Image
+boot: disk
+ata0-master: type=disk, path="dist/x86_64/os.img", mode=flat, cylinders=100, heads=16, spt=63
+
+# Use 64-bit CPU
+cpu: model=corei7_haswell_4770, count=1, ips=1000000, reset_on_triple_fault=1
+
+romimage: file="C:/Program Files/Bochs-3.0/BIOS-bochs-latest"
+vgaromimage: file="C:/Program Files/Bochs-3.0/VGABIOS-lgpl-latest.bin"
+ 
+# Open Bochs GUI debugger
+display_library: win32, options="gui_debug"
+
+# Enable magic breakpoints and port E9 debug printing
+magic_break: enabled=1
+port_e9_hack: enabled=true, all_rings=true
+iodebug: all_rings=1
+
+# Logging and error behavior
+log: bochslog.txt
+panic: action=ask
+error: action=report
+info: action=report
+debug: action=report

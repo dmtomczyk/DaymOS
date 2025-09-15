@@ -46,6 +46,23 @@ If the above command fails, try one of the following:
 
 Alternatively, you should be able to load the operating system on a USB drive and boot into it when you turn on your computer. (I haven't actually tested this yet.)
 
+### Debugging
+
+To stop QEMU from rebooting on a crash and enable logging, run:
+
+```
+qemu-system-x86_64 -no-reboot -no-shutdown \
+    -d int,guest_errors -D qemu.log \
+    -s -S -cdrom dist/x86_64/kernel.iso
+```
+
+This writes CPU and interrupt events to `qemu.log` and starts a GDB server on port 1234. In another terminal you can attach with:
+
+```
+x86_64-elf-gdb dist/x86_64/kernel.bin
+(gdb) target remote localhost:1234
+```
+
 ### Cleanup
 
 Remove the build-evironment image:

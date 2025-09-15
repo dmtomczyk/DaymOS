@@ -4,5 +4,3 @@ dist/
 *.bin
 *.elf
 *.log
-*.ini
-bochslog.txt

@@ -1,32 +1,67 @@
 global start
+extern stack_top
 extern long_mode_start
+extern idt_flush
 
-section .text ; Processor Instructions (TODO read-only)
+section .text
 bits 32
+
 start:
+	; 0. Greet Visitor :)
+	mov al, 'P'
+	out 0xE9, al
+
+	; TODO: 1. Move kernel to 1MB (0x100000)
+	;mov esi, 0x80000
+	;mov edi, 0x100000
+	;mov ecx, KERNEL_SIZE / 4
+	;rep movsd
+	;jmp 0x100000
+
 	mov esp, stack_top
+	mov ebp, esp
 
-	call check_multiboot
-	call check_cpuid
-	call check_long_mode
-
+	; 1. Determine if they came from MB2
+	;cmp eax, 0x36d76289		; mb2 magic
+	;je .from_grub
+	;jmp .from_mbr
+	 
+	; 2. Setup remaining items (LM check, Dummy IDT, Paging, etc.)
+	lidt [dummy_idt_descriptor]
 	call setup_page_tables
 	call enable_paging
-
-	; Boot into 64bit(long) mode
-	lgdt [gdt64.pointer]
-	jmp gdt64.code_segment:long_mode_start
+	call check_long_mode
+	call .enter_long_mode
 
 	hlt
 
-check_multiboot:
-	; If multiboot, this value will be in the eax register on boot.
-	cmp eax, 0x36d76289
-	jne .no_multiboot
+.enter_long_mode:
+	; TODO: Temp debug
+	mov eax, [gdt64.pointer + 2]   ; base of GDT
+	mov [0xb8010], eax
+	mov dword [0xb8014], 0x4F544447 ; "GDT"
+
+	lgdt [gdt64.pointer]
+	jmp gdt64.code_segment:long_mode_start
+
+.from_grub:
+	call setup_page_tables
+	call enable_paging
 	ret
-.no_multiboot:
-	mov al, "M"
-	jmp error
+
+.from_mbr:
+	call setup_page_tables
+	call enable_paging
+	ret
+
+dummy_idt:
+    times 256 dq 0
+
+dummy_idt_descriptor:
+    dw dummy_idt_end - dummy_idt - 1
+    dd dummy_idt
+
+dummy_idt_end:
 
 check_cpuid:
 	pushfd
@@ -80,7 +115,9 @@ setup_page_tables:
 	mov [page_table_l2 + ecx * 8], eax
 
 	inc ecx ; increment counter
-	cmp ecx, 512 ; checks if the whole table is mapped
+	cmp ecx, 8 ; 8 * 2 MiB = 16 MiB
+	; TODO: Reducing actual size due to PIT IRQ0 alignment issue
+	; cmp ecx, 512 ; checks if the whole table is mapped
 	jne .loop ; if not, continue
 
 	ret
@@ -124,15 +161,14 @@ page_table_l3:
 	resb 4096
 page_table_l2:
 	resb 4096
-stack_bottom:
-	resb 4096 * 4
-stack_top:
 
 section .rodata ; TODO Read-only data section
 gdt64:
-	dq 0 ; zero entry
+        dq 0                     ; null descriptor
 .code_segment: equ $ - gdt64
-	dq (1 << 43) | (1 << 44) | (1 << 47) | (1 << 53) ; code segment
+        dq 0x00AF9A000000FFFF    ; 64-bit code segment
+.data_segment: equ $ - gdt64
+        dq 0x00AF92000000FFFF    ; 64-bit data segment
 .pointer:
-	dw $ - gdt64 - 1 ; length
-	dq gdt64 ; address
+        dw $ - gdt64 - 1 ; length
+        dq gdt64 ; address
