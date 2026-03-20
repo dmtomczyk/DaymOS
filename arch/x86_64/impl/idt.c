@@ -1,5 +1,6 @@
 #include "idt.h"
 #include "interrupts.h"
+#include "keyboard.h"
 #include "pic.h"
 #include "pit.h"
 #include "print.h"
@@ -10,6 +11,7 @@ extern void isr8(void);
 extern void isr13(void);
 extern void isr14(void);
 extern void irq0(void);
+extern void irq1(void);
 
 static struct idt_entry idt[256];
 
@@ -64,6 +66,7 @@ void idt_init(void) {
     idt_set_gate(13, isr13, 0x8E);
     idt_set_gate(14, isr14, 0x8E);
     idt_set_gate(32, irq0, 0x8E);
+    idt_set_gate(33, irq1, 0x8E);
 
     struct idt_ptr idtr = {
         .limit = sizeof(idt) - 1,
@@ -120,4 +123,8 @@ void irq0_handler(void) {
     }
 
     pic_send_eoi(0);
+}
+
+void irq1_handler(void) {
+    keyboard_handle_irq();
 }

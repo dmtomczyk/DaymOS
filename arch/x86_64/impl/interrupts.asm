@@ -4,6 +4,7 @@
 
 .extern isr_exception_handler
 .extern irq0_handler
+.extern irq1_handler
 
 .global isr0
 .global isr6
@@ -11,6 +12,7 @@
 .global isr13
 .global isr14
 .global irq0
+.global irq1
 
 .macro PUSH_REGS
     push rax
@@ -71,6 +73,13 @@ irq0:
     PUSH_REGS
     cld
     call irq0_handler
+    POP_REGS
+    iretq
+
+irq1:
+    PUSH_REGS
+    cld
+    call irq1_handler
     POP_REGS
     iretq
 
