@@ -3,6 +3,7 @@
 #include "pic.h"
 #include "pit.h"
 #include "print.h"
+#include "shell.h"
 
 void kernel_main(void)
 {
@@ -32,8 +33,10 @@ void kernel_main(void)
     pit_init(100);
 
     print_str("Enabling interrupts...\n");
-    print_str("Type on the keyboard to echo characters.\n");
+    print_str("Keyboard ready: Shift, Backspace, and Enter supported.\n");
     __asm__ volatile ("sti");
+
+    shell_init();
 
     for (;;) {
         __asm__ volatile ("hlt");

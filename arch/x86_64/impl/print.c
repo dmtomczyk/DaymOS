@@ -79,6 +79,22 @@ void print_set_color(uint8_t foreground, uint8_t background) {
     color = foreground | (background << 4);
 }
 
+void print_backspace(void) {
+    if (col > 0) {
+        col--;
+    } else if (row > 0) {
+        row--;
+        col = NUM_COLS - 1;
+    } else {
+        return;
+    }
+
+    buffer[col + (NUM_COLS * row)] = (struct Char) {
+        .character = ' ',
+        .color = color,
+    };
+}
+
 void print_hex64(uint64_t value) {
     static const char* hex = "0123456789ABCDEF";
     print_str("0x");
