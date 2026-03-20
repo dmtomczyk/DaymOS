@@ -1,52 +1,103 @@
 # DaymOS
-Daymian's Operating System built with x86 asm
+
+Daymian's hobby operating system for x86_64, built with freestanding C plus bootstrap assembly.
 
 ![DaymOS GRUB Screenshot](/pics/GRUBMenu.png)
 ![DaymOS Screenshot](/pics/DaymOS-0.1.0.png)
 
-## Write Your Own 64-bit Operating System Kernel From Scratch
-### Prerequisites
+## Current status
 
- - A text editor such as [VS Code](https://code.visualstudio.com/).
- - [Docker](https://www.docker.com/) for creating our build-environment.
- - [Qemu](https://www.qemu.org/) for emulating our operating system.
-   - Remember to add Qemu to the path so that you can access it from your command-line. ([Windows instructions here](https://dev.to/whaleshark271/using-qemu-on-windows-10-home-edition-4062))
+This repository currently boots a tiny 64-bit kernel through GRUB/Multiboot2, switches the CPU into long mode, and writes to the VGA text buffer.
 
-### Setup
+What works right now:
+- Multiboot2 header + GRUB boot flow
+- 32-bit bootstrap that checks Multiboot, CPUID, and long mode support
+- Basic page-table setup using 2 MiB identity-mapped pages
+- Transition into 64-bit long mode
+- VGA text-mode console output
 
-Build an image for our build-environment:
- - `docker build buildenv -t myos-buildenv`
+What is still missing:
+- Interrupt descriptor table (IDT)
+- Keyboard interrupt handling / input loop
+- Timer initialization
+- Memory manager beyond the initial bootstrap mapping
+- Scheduler, processes, syscalls, filesystems, drivers, etc.
 
-### Build
+## Prerequisites
 
-Enter build environment:
- - Linux or MacOS: `docker run --rm -it -v "$(pwd)":/root/env myos-buildenv`
- - Windows (CMD): `docker run --rm -it -v "%cd%":/root/env myos-buildenv`
- - Windows (PowerShell): `docker run --rm -it -v "${pwd}:/root/env" myos-buildenv`
- - Please use the linux command if you are using `WSL`, `msys2` or `git bash`
- - NOTE: If you are having trouble with an unshared drive, ensure your docker daemon has access to the drive you're development environment is in. For Docker Desktop, this is in "Settings > Shared Drives" or "Settings > Resources > File Sharing".
+### Native build (Linux host)
+- `gcc`
+- `ld`
+- `grub-file`
+- `grub-mkrescue`
+- One of: `xorriso`, `mkisofs`, or `genisoimage` if you want `kernel.iso`
+- `qemu-system-x86_64` if you want to emulate locally
 
-Build for x86 (other architectures may come in the future):
- - `make build-x86_64`
- - If you are using Qemu, please close it before running this command to prevent errors.
+### Docker build
+- Docker
+- QEMU (optional, for emulation outside the container)
 
-To leave the build environment, enter `exit`.
+## Build
 
-### Emulate
+### Option 1: native host build
 
-You can emulate your operating system using [Qemu](https://www.qemu.org/): (Don't forget to [add qemu to your path](https://dev.to/whaleshark271/using-qemu-on-windows-10-home-edition-4062#:~:text=2.-,Add%20Qemu%20path%20to%20environment%20variables%20settings,-Copy%20the%20Qemu)!)
+```bash
+make build-x86_64
+```
 
- - `qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso`
- - Note: Close the emulator when finished, so as to not block writing to `kernel.iso` for future builds.
+Notes:
+- If `x86_64-elf-gcc` is installed, the Makefile will use it.
+- Otherwise it falls back to the host `gcc`/`ld` toolchain with freestanding flags.
+- If no ISO creation tool is installed, the build still produces `dist/x86_64/kernel.bin` and validates the Multiboot2 image when possible.
 
-If the above command fails, try one of the following:
- - Windows: [`qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso -L "C:\Program Files\qemu"`](https://stackoverflow.com/questions/66266448/qemu-could-not-load-pc-bios-bios-256k-bin)
- - Linux: [`qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso -L /usr/share/qemu/`](https://unix.stackexchange.com/questions/134893/cannot-start-kvm-vm-because-missing-bios)
- - Alternatively, install a custom BIOS binary file and link it to Qemu using the `-L` option.
+### Option 2: Docker build environment
 
-Alternatively, you should be able to load the operating system on a USB drive and boot into it when you turn on your computer. (I haven't actually tested this yet.)
+Build the image:
 
-### Cleanup
+```bash
+docker build buildenv -t myos-buildenv
+```
 
-Remove the build-evironment image:
- - `docker rmi myos-buildenv -f`
+Build the kernel inside the container:
+
+```bash
+docker run --rm -it -v "$(pwd)":/root/env myos-buildenv make build-x86_64
+```
+
+Windows (CMD):
+
+```bat
+docker run --rm -it -v "%cd%":/root/env myos-buildenv make build-x86_64
+```
+
+Windows (PowerShell):
+
+```powershell
+docker run --rm -it -v "${pwd}:/root/env" myos-buildenv make build-x86_64
+```
+
+## Emulate
+
+If `dist/x86_64/kernel.iso` exists:
+
+```bash
+qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso
+```
+
+If you only built `kernel.bin`, you can still inspect it with:
+
+```bash
+grub-file --is-x86-multiboot2 dist/x86_64/kernel.bin
+```
+
+## Cleanup
+
+```bash
+make clean
+```
+
+To remove the Docker build image:
+
+```bash
+docker rmi myos-buildenv -f
+```

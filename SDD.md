@@ -1,53 +1,93 @@
 # DaymOS Software Design Document
 
-This is a living document (that's a lie), that outlines design decisions and some implementation details about the operating system to help remind me why I chose something over another thing.
+This is a living design note for DaymOS. It captures what the kernel does today, what design direction it is heading toward, and which subsystems are still intentionally unfinished.
 
-Table of Contents
+## Table of Contents
 
 1. Bootloader
 2. Kernel Design
 3. Code Structure
-
-## 0. To Organize Later
-
-## 0.1 GDT - Global Descriptor Table
-
-The GDT is defined in main.asm by using the LGDT assembly instruction whose argument is a pointer to the GDT descriptor structure. As we're using GRUB, it will cache the GDT entries in the processor, but after a segment change we will lose that, so that's why we needed to define our own. See https://wiki.osdev.org/GDT for more info later.
-
-## 0.2 IDT - Interrupt Descriptor Table
-
-TODO: The IDT is used for task and interrupt descriptors (devices, etc.).
-
-## 0.3 Timing - Programmable Internal Timer
-
-TODO: Initialise a timer to be able to keep track of timing. Consider which timer you would like to support first (most beginners go with PIT, although it is ancient), and how would you like to set it up (most set it up to tick at a convenient interval, like 1 ms or 10 ms). However, make sure you abstract the interface so adding support for more timers is easier.
+4. Near-Term TODOs
 
 ## 1. Bootloader
 
 ### 1.1 Multiboot2
 
-I'd like to roll my own bootloader at some point, just for the heck of it, but for now I've chosen to use [MB2](https://wiki.osdev.org/Multiboot). For x86 targets, which this OS was originally developed against, the magic number is stored in EAX just as the kernel is invoked. At the time of writing this, this is defined in the header.asm file, and used in the linker.ld file
+DaymOS currently uses GRUB + Multiboot2 rather than a custom bootloader. That keeps early development focused on CPU bring-up and kernel structure instead of boot media details.
 
-## 2 Kernel Design
+At boot, GRUB loads the kernel and enters the 32-bit bootstrap entrypoint. The bootstrap code:
+- verifies the Multiboot2 magic value
+- checks CPUID support
+- checks long mode support
+- builds a minimal paging structure
+- enables paging + long mode
+- loads a 64-bit GDT
+- performs a far jump into 64-bit code
 
-### 2.1 Higher Half Kernel
+A custom bootloader is still an option later, but it is not a current priority.
 
-I'm initially leaning toward a higher-half kernel design, but interested in considering other options. At the time of writing this, the kernel is at 0x80000000, leaving the lower addresses for user space. This also means Mnemonic invalid pointers like 0xCAFEBABE, 0xDEADBEEF, and 0xDEADC0DE can be used (funny).
+## 2. Kernel Design
 
-Some useful notes on higher-half kernels from OSDev
+### 2.1 Current memory model
 
-- Higher half kernels allow the kernel to be mapped in every user process, which is good/traditional.
-- If your OS is 64-bit (which we are), then 32-bit applications will be able to use the full 32-bit address space
-- Mapping at 0x80000000 leaves 2 GiB for kernel data and 2 GiB for processes
+Despite older notes that mentioned a higher-half kernel, the implementation in this repository is currently a **lower-memory bootstrap kernel** linked at `0x00100000` (1 MiB).
+
+The early boot code creates a minimal identity-mapped paging setup using 2 MiB pages so the processor can safely transition into long mode and continue executing the loaded kernel image.
+
+This means:
+- the current kernel is **not** a higher-half kernel yet
+- the linker script and paging setup reflect the current lower-memory bootstrap design
+- a higher-half layout remains a future architectural option, not a present feature
+
+### 2.2 Console output
+
+The kernel currently uses the VGA text buffer at `0xb8000` for output.
+
+The console layer supports:
+- clearing the screen
+- changing foreground/background color
+- writing characters and strings
+- newline handling with scroll-up behavior
+
+### 2.3 CPU tables and interrupts
+
+A 64-bit GDT is present because it is required for the transition into long mode.
+
+The IDT is **not implemented yet**. That means there is currently no interrupt or exception handling infrastructure beyond what GRUB/firmware already did before the kernel took over.
+
+### 2.4 Timing
+
+No timer is initialized yet. A future version should bring up a simple timer source (likely PIT first, then APIC/HPET later) behind a small abstraction.
 
 ## 3. Code Structure
 
-### 3.1 Bootloader
+### 3.1 Boot code
 
-### 3.2 Kernel
+- `arch/x86_64/impl/boot/header.asm` — Multiboot2 header
+- `arch/x86_64/impl/boot/main.asm` — 32-bit bootstrap
+- `arch/x86_64/impl/boot/main64.asm` — 64-bit handoff stub
 
-### 3.3 Interfaces & Includes
+### 3.2 Kernel code
 
-### 3.4 Permissions
+- `arch/x86_64/impl/kernel/main.c` — C kernel entrypoint
+- `arch/x86_64/impl/print.c` — VGA text console implementation
+- `arch/x86_64/intf/print.h` — console interface
 
-TODO: .bss, .data, .rodata, and .text should have specific read/write permissions defined which can be done via linker.
+### 3.3 Link and image layout
+
+The linker script now places the following explicitly:
+- Multiboot header
+- `.text`
+- `.rodata`
+- `.data`
+- `.bss`
+
+This is more explicit and less fragile than relying on linker orphan-section placement.
+
+## 4. Near-Term TODOs
+
+1. Add an IDT and basic exception handlers.
+2. Add a timer source and tick counter.
+3. Add keyboard input through interrupts instead of only keeping an unused scan-code map.
+4. Decide whether to stay with a low-memory bootstrap kernel for a while or move to a true higher-half layout.
+5. Introduce a simple physical memory manager.

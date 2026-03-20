@@ -1,10 +1,11 @@
-global long_mode_start
-extern kernel_main
+.intel_syntax noprefix
 
-section .text ; Processor Instructions (TODO read-only)
-bits 64
+.global long_mode_start
+.extern kernel_main
+
+.section .text
+.code64
 long_mode_start:
-    ; load null into all data segment registers
     mov ax, 0
     mov ss, ax
     mov ds, ax
@@ -12,5 +13,7 @@ long_mode_start:
     mov fs, ax
     mov gs, ax
 
-        call kernel_main
+    call kernel_main
+1:
     hlt
+    jmp 1b
