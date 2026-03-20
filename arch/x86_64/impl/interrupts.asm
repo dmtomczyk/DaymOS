@@ -3,7 +3,7 @@
 .section .text
 
 .extern isr_exception_handler
-.extern irq_handler
+.extern irq0_handler
 
 .global isr0
 .global isr6
@@ -68,9 +68,11 @@ ISR_ERR 13
 ISR_ERR 14
 
 irq0:
-    push 0
-    push 32
-    jmp irq_common
+    PUSH_REGS
+    cld
+    call irq0_handler
+    POP_REGS
+    iretq
 
 isr_common:
     PUSH_REGS
@@ -79,17 +81,6 @@ isr_common:
     lea rdx, [rsp + 136]
     cld
     call isr_exception_handler
-    POP_REGS
-    add rsp, 16
-    iretq
-
-irq_common:
-    PUSH_REGS
-    mov rdi, [rsp + 120]
-    mov rsi, [rsp + 128]
-    lea rdx, [rsp + 136]
-    cld
-    call irq_handler
     POP_REGS
     add rsp, 16
     iretq

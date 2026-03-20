@@ -81,25 +81,14 @@ void isr_exception_handler(uint64_t vector, uint64_t error_code, struct interrup
     halt_forever();
 }
 
-void irq_handler(uint64_t vector, uint64_t error_code, struct interrupt_frame* frame) {
-    (void)error_code;
-    (void)frame;
+void irq0_handler(void) {
+    pit_on_tick();
 
-    if (vector == 32) {
-        pit_on_tick();
-
-        static uint64_t tick_print_gate = 0;
-        tick_print_gate++;
-        if ((tick_print_gate % 100) == 0) {
-            print_char('.');
-        }
-
-        pic_send_eoi(0);
-        return;
+    static uint64_t tick_print_gate = 0;
+    tick_print_gate++;
+    if ((tick_print_gate % 100) == 0) {
+        print_char('.');
     }
 
-    print_set_color(PRINT_COLOR_LIGHT_RED, PRINT_COLOR_BLACK);
-    print_str("Unhandled IRQ\n");
-    print_set_color(PRINT_COLOR_WHITE, PRINT_COLOR_BLACK);
-    halt_forever();
+    pic_send_eoi(0);
 }

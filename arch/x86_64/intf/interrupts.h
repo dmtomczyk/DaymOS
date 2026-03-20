@@ -9,4 +9,4 @@ struct interrupt_frame {
 };
 
 void isr_exception_handler(uint64_t vector, uint64_t error_code, struct interrupt_frame* frame);
-void irq_handler(uint64_t vector, uint64_t error_code, struct interrupt_frame* frame);
+void irq0_handler(void);
