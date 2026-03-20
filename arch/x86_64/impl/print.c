@@ -1,4 +1,5 @@
 #include "print.h"
+#include "io.h"
 
 static const size_t NUM_COLS = 80;
 static const size_t NUM_ROWS = 25;
@@ -12,6 +13,15 @@ static struct Char* const buffer = (struct Char*) 0xb8000;
 static size_t col = 0;
 static size_t row = 0;
 static uint8_t color = PRINT_COLOR_WHITE | (PRINT_COLOR_BLACK << 4);
+
+static void update_cursor(void) {
+    uint16_t position = (uint16_t)(row * NUM_COLS + col);
+
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, (uint8_t)(position & 0xFF));
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, (uint8_t)((position >> 8) & 0xFF));
+}
 
 static void clear_row(size_t row_index) {
     struct Char empty = {
@@ -31,6 +41,8 @@ void print_clear(void) {
     for (size_t current_row = 0; current_row < NUM_ROWS; current_row++) {
         clear_row(current_row);
     }
+
+    update_cursor();
 }
 
 static void print_newline(void) {
@@ -49,6 +61,7 @@ static void print_newline(void) {
     }
 
     clear_row(NUM_ROWS - 1);
+    update_cursor();
 }
 
 void print_char(char character) {
@@ -67,6 +80,7 @@ void print_char(char character) {
     };
 
     col++;
+    update_cursor();
 }
 
 void print_str(const char* str) {
@@ -93,6 +107,8 @@ void print_backspace(void) {
         .character = ' ',
         .color = color,
     };
+
+    update_cursor();
 }
 
 void print_hex64(uint64_t value) {
