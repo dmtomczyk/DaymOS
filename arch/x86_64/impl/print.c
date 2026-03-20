@@ -1,5 +1,6 @@
 #include "print.h"
 #include "io.h"
+#include "serial.h"
 
 static const size_t NUM_COLS = 80;
 static const size_t NUM_ROWS = 25;
@@ -13,6 +14,7 @@ static struct Char* const buffer = (struct Char*) 0xb8000;
 static size_t col = 0;
 static size_t row = 0;
 static uint8_t color = PRINT_COLOR_WHITE | (PRINT_COLOR_BLACK << 4);
+static int serial_mirror_enabled = 0;
 
 static void update_cursor(void) {
     uint16_t position = (uint16_t)(row * NUM_COLS + col);
@@ -32,6 +34,10 @@ static void clear_row(size_t row_index) {
     for (size_t current_col = 0; current_col < NUM_COLS; current_col++) {
         buffer[current_col + (NUM_COLS * row_index)] = empty;
     }
+}
+
+void print_enable_serial_mirror(void) {
+    serial_mirror_enabled = 1;
 }
 
 void print_clear(void) {
@@ -65,8 +71,30 @@ static void print_newline(void) {
 }
 
 void print_char(char character) {
+    if (serial_mirror_enabled) {
+        serial_write_char(character);
+    }
+
     if (character == '\n') {
         print_newline();
+        return;
+    }
+
+    if (character == '\r') {
+        col = 0;
+        update_cursor();
+        return;
+    }
+
+    if (character == '\t') {
+        for (int i = 0; i < 4; i++) {
+            print_char(' ');
+        }
+        return;
+    }
+
+    if (character == '\b') {
+        print_backspace();
         return;
     }
 

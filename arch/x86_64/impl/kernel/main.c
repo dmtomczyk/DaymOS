@@ -3,11 +3,16 @@
 #include "pic.h"
 #include "pit.h"
 #include "print.h"
+#include "serial.h"
 #include "shell.h"
 
 void kernel_main(void)
 {
+    serial_init();
+    print_enable_serial_mirror();
+
     print_clear();
+    print_str("[boot] DaymOS kernel starting\n");
     print_set_color(PRINT_COLOR_YELLOW, PRINT_COLOR_BLACK);
     print_str("Welcome to DaymOS (Daymian's Operating System)\n");
     print_set_color(PRINT_COLOR_WHITE, PRINT_COLOR_BLACK);
@@ -33,9 +38,8 @@ void kernel_main(void)
     pit_init(100);
 
     print_str("Enabling interrupts...\n");
-    __asm__ volatile ("sti");
-
     shell_init();
+    __asm__ volatile ("sti");
 
     for (;;) {
         __asm__ volatile ("hlt");
