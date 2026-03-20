@@ -36,6 +36,12 @@ static void halt_forever(void) {
     }
 }
 
+static uint64_t read_cr2(void) {
+    uint64_t value;
+    __asm__ volatile ("mov %%cr2, %0" : "=r"(value));
+    return value;
+}
+
 static const char* exception_name(uint64_t vector) {
     switch (vector) {
         case 0: return "Divide by zero";
@@ -69,14 +75,37 @@ void idt_init(void) {
 }
 
 void isr_exception_handler(uint64_t vector, uint64_t error_code, struct interrupt_frame* frame) {
-    (void)error_code;
-    (void)frame;
-
     print_set_color(PRINT_COLOR_LIGHT_RED, PRINT_COLOR_BLACK);
     print_str("\nEXCEPTION: ");
     print_str(exception_name(vector));
-    print_str("\n");
+    print_str(" (#");
+    print_dec(vector);
+    print_str(")\n");
+
     print_set_color(PRINT_COLOR_WHITE, PRINT_COLOR_BLACK);
+    print_str("error code: ");
+    print_hex64(error_code);
+    print_str("\n");
+
+    if (frame != 0) {
+        print_str("rip:        ");
+        print_hex64(frame->rip);
+        print_str("\n");
+
+        print_str("cs:         ");
+        print_hex64(frame->cs);
+        print_str("\n");
+
+        print_str("rflags:     ");
+        print_hex64(frame->rflags);
+        print_str("\n");
+    }
+
+    if (vector == 14) {
+        print_str("cr2:        ");
+        print_hex64(read_cr2());
+        print_str("\n");
+    }
 
     halt_forever();
 }

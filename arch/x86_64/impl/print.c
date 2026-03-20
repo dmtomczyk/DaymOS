@@ -78,3 +78,31 @@ void print_str(const char* str) {
 void print_set_color(uint8_t foreground, uint8_t background) {
     color = foreground | (background << 4);
 }
+
+void print_hex64(uint64_t value) {
+    static const char* hex = "0123456789ABCDEF";
+    print_str("0x");
+
+    for (int shift = 60; shift >= 0; shift -= 4) {
+        print_char(hex[(value >> shift) & 0xF]);
+    }
+}
+
+void print_dec(uint64_t value) {
+    char buffer[21];
+    size_t i = 0;
+
+    if (value == 0) {
+        print_char('0');
+        return;
+    }
+
+    while (value > 0 && i < sizeof(buffer)) {
+        buffer[i++] = (char)('0' + (value % 10));
+        value /= 10;
+    }
+
+    while (i > 0) {
+        print_char(buffer[--i]);
+    }
+}
