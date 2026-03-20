@@ -32,11 +32,10 @@ void kernel_main(void)
     print_str("Initializing PIT...\n");
     pit_init(100);
 
-    print_str("Enabling interrupts...\n");
-    print_str("Keyboard ready: Shift, Backspace, and Enter supported.\n");
-    __asm__ volatile ("sti");
-
     shell_init();
+    print_str("(keyboard ready: Shift, Backspace, Enter)\n");
+    print_str("Enabling interrupts...\n");
+    __asm__ volatile ("sti");
 
     for (;;) {
         __asm__ volatile ("hlt");

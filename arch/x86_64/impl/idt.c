@@ -115,13 +115,6 @@ void isr_exception_handler(uint64_t vector, uint64_t error_code, struct interrup
 
 void irq0_handler(void) {
     pit_on_tick();
-
-    static uint64_t tick_print_gate = 0;
-    tick_print_gate++;
-    if ((tick_print_gate % 100) == 0) {
-        print_char('.');
-    }
-
     pic_send_eoi(0);
 }
 
