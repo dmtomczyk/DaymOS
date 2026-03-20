@@ -30,3 +30,4 @@ void print_backspace(void);
 void print_hex64(uint64_t value);
 void print_dec(uint64_t value);
 void print_enable_serial_mirror(void);
+void print_disable_serial_mirror(void);

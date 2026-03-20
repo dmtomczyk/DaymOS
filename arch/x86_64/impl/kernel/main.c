@@ -38,6 +38,7 @@ void kernel_main(void)
     pit_init(100);
 
     print_str("Enabling interrupts...\n");
+    print_disable_serial_mirror();
     shell_init();
     __asm__ volatile ("sti");
 

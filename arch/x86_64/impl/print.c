@@ -40,6 +40,10 @@ void print_enable_serial_mirror(void) {
     serial_mirror_enabled = 1;
 }
 
+void print_disable_serial_mirror(void) {
+    serial_mirror_enabled = 0;
+}
+
 void print_clear(void) {
     col = 0;
     row = 0;
